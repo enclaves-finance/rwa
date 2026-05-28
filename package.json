@@ -1,0 +1,81 @@
+{
+  "name": "@enclaves/rwa",
+  "version": "0.1.0",
+  "description": "Enclaves Real-World-Asset tokenization contracts — ERC-3643 (T-REX) lifecycle, compliance, staking and category extensions.",
+  "license": "GPL-3.0",
+  "homepage": "https://github.com/enclaves-finance/rwa#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enclaves-finance/rwa.git"
+  },
+  "bugs": {
+    "url": "https://github.com/enclaves-finance/rwa/issues"
+  },
+  "keywords": [
+    "ethereum",
+    "solidity",
+    "rwa",
+    "tokenization",
+    "erc3643",
+    "t-rex",
+    "biomass",
+    "real-estate",
+    "securities",
+    "compliance",
+    "enclaves"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "prepare": "hardhat compile",
+    "compile": "hardhat compile",
+    "node": "hardhat node --port 8545",
+    "dev:chain": "ts-node scripts/dev-chain.ts",
+    "dev:chain:detached": "ts-node scripts/dev-chain.ts --detach",
+    "test": "hardhat test",
+    "test:unit": "hardhat test 'test/unit/**/*.test.ts'",
+    "test:integration": "hardhat test 'test/integration/**/*.test.ts'",
+    "test:e2e": "hardhat test 'test/e2e/**/*.test.ts'",
+    "test:local": "hardhat test --network localhost",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost && npm run export",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia && npm run verify:sepolia && npm run export:sepolia",
+    "deploy:polygonAmoy": "hardhat run scripts/deploy.ts --network polygonAmoy && npm run verify:polygonAmoy && npm run export:polygonAmoy",
+    "verify": "hardhat run scripts/verify-deployment.ts --network localhost",
+    "verify:sepolia": "hardhat run scripts/verify-deployment.ts --network sepolia",
+    "verify:polygonAmoy": "hardhat run scripts/verify-deployment.ts --network polygonAmoy",
+    "verify:etherscan": "hardhat run scripts/verify-etherscan.ts --network sepolia",
+    "export": "hardhat run scripts/export-addresses.ts --network localhost",
+    "export:sepolia": "hardhat run scripts/export-addresses.ts --network sepolia",
+    "export:polygonAmoy": "hardhat run scripts/export-addresses.ts --network polygonAmoy",
+    "deploy:token": "hardhat run scripts/deploy-token.ts",
+    "console": "hardhat console --network localhost",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "solhint 'contracts/**/*.sol'",
+    "format": "prettier --write 'contracts/**/*.sol' '{scripts,test}/**/*.ts'"
+  },
+  "devDependencies": {
+    "@enclaves/encl": "file:../encl",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.9",
+    "@nomicfoundation/hardhat-ethers": "^3.0.9",
+    "@nomicfoundation/hardhat-verify": "^2.0.13",
+    "@openzeppelin/contracts": "^4.9.6",
+    "@openzeppelin/contracts-upgradeable": "^4.9.6",
+    "@tokenysolutions/t-rex": "^4.1.6",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/chai": "^4.3.16",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.14.10",
+    "chai": "^4.4.1",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.16.0",
+    "hardhat": "^2.28.6",
+    "prettier": "^3.3.3",
+    "prettier-plugin-solidity": "^1.3.1",
+    "solhint": "^5.0.3",
+    "ts-node": "^10.9.2",
+    "typechain": "^8.3.2",
+    "typescript": "^5.5.4"
+  }
+}

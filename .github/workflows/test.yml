@@ -1,0 +1,71 @@
+name: test
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: compile + typecheck + test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20', '22']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `@enclaves/encl` is consumed by `file:../encl`; CI checks out
+          # the sibling repo so the local dependency resolves the same way
+          # it does in a developer working copy.
+          path: rwa
+
+      - uses: actions/checkout@v4
+        with:
+          repository: enclaves-finance/encl
+          ref: dev
+          path: encl
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: |
+            encl/package-lock.json
+            rwa/package-lock.json
+
+      # encl ships compiled artifacts to its `dist/` and exposes them via
+      # its `prepare` hook — install it first so the rwa project picks up
+      # a fully built sibling, exactly as it would on a local clone.
+      #
+      # We use `npm install` rather than `npm ci` in both packages because
+      # ganache's bundled `fsevents` shows up in the package-lock as an
+      # "extraneous" darwin-only entry that `npm ci` refuses to skip on
+      # Linux. `npm install` is permissive about that single stray entry
+      # while still honouring the rest of the lockfile.
+      - name: Install encl
+        working-directory: encl
+        run: npm install --no-audit --no-fund
+
+      - name: Install rwa
+        working-directory: rwa
+        run: npm install --no-audit --no-fund
+
+      - name: Lint Solidity (rwa)
+        working-directory: rwa
+        run: npm run lint
+
+      - name: Typecheck (rwa)
+        working-directory: rwa
+        run: npm run typecheck
+
+      - name: Test (rwa)
+        working-directory: rwa
+        run: npm test
