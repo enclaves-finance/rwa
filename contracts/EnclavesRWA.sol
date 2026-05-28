@@ -578,7 +578,15 @@ abstract contract EnclavesRWA is
         _burn(msg.sender, tokenAmount);
         compliance.destroyed(msg.sender, tokenAmount);
 
-        // Pull payout from escrow. Escrow must approve this contract.
+        // Pull payout from the escrow. The escrow is an immutable
+        // per-token contract whose constructor approves THIS contract
+        // for `type(uint256).max` of `paymentToken`, and the function
+        // is `nonReentrant`. Slither's `arbitrary-send-erc20` detector
+        // flags any transferFrom whose `from` is not `msg.sender`; the
+        // pre-authorised pull-payment pattern is exactly what this
+        // detector exists to catch in untrusted contexts and exactly
+        // what we intentionally do here.
+        // slither-disable-next-line arbitrary-send-erc20
         token.safeTransferFrom(redemptionEscrow, msg.sender, payout);
 
         emit TokensRedeemed(msg.sender, tokenAmount, payout);
