@@ -1,0 +1,8 @@
+{
+  "_comment_purpose": "Slither config — see https://github.com/crytic/slither/wiki/Usage. The `detectors_to_exclude` list silences classes of finding that are known not to apply to this codebase (e.g. assembly use inside well-audited OZ libraries, ERC-3643 / T-REX naming conventions). Anything not listed here remains in scope. Tighten over time — never widen — and justify additions in the PR description.",
+  "detectors_to_exclude": "naming-convention,solc-version,similar-names,pragma,assembly,low-level-calls",
+  "exclude_informational": true,
+  "exclude_low": true,
+  "filter_paths": "node_modules|test|scripts|contracts/mocks|contracts/external",
+  "solc_remaps": "@openzeppelin=node_modules/@openzeppelin @tokenysolutions=node_modules/@tokenysolutions"
+}

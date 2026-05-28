@@ -13,6 +13,7 @@
 import 'dotenv/config';
 import '@nomicfoundation/hardhat-ethers';
 import '@nomicfoundation/hardhat-chai-matchers';
+import 'solidity-coverage';
 import '@nomicfoundation/hardhat-verify';
 import '@typechain/hardhat';
 

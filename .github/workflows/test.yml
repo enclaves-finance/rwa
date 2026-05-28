@@ -4,7 +4,16 @@ on:
   push:
     branches: [main, dev]
   pull_request:
-    branches: [main, dev]
+    # Empty `branches:` makes the trigger fire for PRs targeting ANY
+    # branch, which is what we want — required checks live on PR runs,
+    # not push runs.
+    branches:
+  workflow_dispatch:
+
+# Least-privilege default. Individual jobs that need more (e.g. to
+# write a coverage comment) opt back in.
+permissions:
+  contents: read
 
 concurrency:
   group: test-${{ github.ref }}
@@ -12,28 +21,32 @@ concurrency:
 
 jobs:
   test:
-    name: compile + typecheck + test
+    name: compile + lint + typecheck + test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         node-version: ['20', '22']
     steps:
-      - uses: actions/checkout@v4
+      # Actions are pinned to immutable commit SHAs (not movable tags
+      # like @v4) so that an attacker who compromises an action's repo
+      # cannot silently change what runs in our CI. Dependabot bumps
+      # these as PRs; never auto-merge them.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          # `@enclaves/encl` is consumed by `file:../encl`; CI checks out
-          # the sibling repo so the local dependency resolves the same way
-          # it does in a developer working copy.
+          # `@enclaves/encl` is consumed by `file:../encl`; CI checks
+          # out the sibling repo so the local dependency resolves the
+          # same way it does in a developer working copy.
           path: rwa
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: enclaves-finance/encl
           ref: dev
           path: encl
 
       - name: Set up Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -41,22 +54,18 @@ jobs:
             encl/package-lock.json
             rwa/package-lock.json
 
-      # encl ships compiled artifacts to its `dist/` and exposes them via
-      # its `prepare` hook — install it first so the rwa project picks up
-      # a fully built sibling, exactly as it would on a local clone.
-      #
-      # We use `npm install` rather than `npm ci` in both packages because
-      # ganache's bundled `fsevents` shows up in the package-lock as an
-      # "extraneous" darwin-only entry that `npm ci` refuses to skip on
-      # Linux. `npm install` is permissive about that single stray entry
-      # while still honouring the rest of the lockfile.
-      - name: Install encl
+      # `npm ci` insists the install be byte-for-byte the lockfile, so
+      # any drift fails the build instead of silently mutating
+      # node_modules. Install encl first; its prepare hook compiles
+      # the contracts + builds the TypeScript entry point so the rwa
+      # project picks up a fully built sibling.
+      - name: Install encl (frozen lockfile)
         working-directory: encl
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
-      - name: Install rwa
+      - name: Install rwa (frozen lockfile)
         working-directory: rwa
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Lint Solidity (rwa)
         working-directory: rwa
@@ -69,3 +78,95 @@ jobs:
       - name: Test (rwa)
         working-directory: rwa
         run: npm test
+
+  coverage:
+    name: coverage (≥90% lines / ≥70% branches)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: rwa
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: enclaves-finance/encl
+          ref: dev
+          path: encl
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            encl/package-lock.json
+            rwa/package-lock.json
+
+      - name: Install encl (frozen lockfile)
+        working-directory: encl
+        run: npm ci --no-audit --no-fund
+
+      - name: Install rwa (frozen lockfile)
+        working-directory: rwa
+        run: npm ci --no-audit --no-fund
+
+      - name: Run solidity-coverage
+        working-directory: rwa
+        run: npm run coverage
+
+      # Floor is set just below current numbers (lines 92.93 / branches
+      # 72.58); ratchet up over time, never lower silently.
+      - name: Enforce coverage floor
+        working-directory: rwa
+        run: |
+          node -e "
+            const c = require('./coverage/coverage-summary.json').total;
+            const floors = { lines: 90, statements: 90, functions: 90, branches: 70 };
+            let bad = false;
+            for (const [k, min] of Object.entries(floors)) {
+              const v = c[k].pct;
+              const ok = v >= min;
+              console.log(\`\${ok ? 'OK  ' : 'FAIL'} \${k}: \${v}% (floor \${min}%)\`);
+              if (!ok) bad = true;
+            }
+            if (bad) process.exit(1);
+          "
+
+  slither:
+    name: slither
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: rwa
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: enclaves-finance/encl
+          ref: dev
+          path: encl
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            encl/package-lock.json
+            rwa/package-lock.json
+
+      - name: Install encl (frozen lockfile)
+        working-directory: encl
+        run: npm ci --no-audit --no-fund
+
+      - name: Install rwa (frozen lockfile)
+        working-directory: rwa
+        run: npm ci --no-audit --no-fund
+
+      - name: Run Slither
+        uses: crytic/slither-action@b52cc1cbfee9ca3e8722dd5224299d16c9a6b80f # v0.4.2
+        with:
+          target: rwa/
+          slither-config: rwa/slither.config.json
+          # TODO: ratchet to `medium` once the initial findings have
+          # been triaged. `high` is the conservative starting floor —
+          # any high-severity finding blocks the merge.
+          fail-on: high

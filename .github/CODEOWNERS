@@ -1,0 +1,36 @@
+# CODEOWNERS — required reviewers for high-value paths.
+#
+# Combined with branch protection ("Require review from Code Owners"),
+# this means PRs touching anything under these paths cannot merge until
+# the listed owner(s) approve the change. See:
+#   https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+#
+# When the team grows, replace `@ingemar-enclaves` with a security team
+# (e.g. `@enclaves-finance/security`) so the rule scales without
+# touching this file per-person.
+
+# Default owner for anything not matched below.
+*                                @ingemar-enclaves
+
+# On-chain code — the actual bytecode that gets deployed.
+/contracts/                      @ingemar-enclaves
+
+# Deploy / verify scripts and the deploy-topology JSON examples that
+# downstream tooling reads.
+/scripts/                        @ingemar-enclaves
+/deployments/                    @ingemar-enclaves
+
+# CI, build, and supply-chain configuration. A change here can quietly
+# weaken every other guard rail, so it gets the same scrutiny as
+# contracts.
+/.github/                        @ingemar-enclaves
+/hardhat.config.ts               @ingemar-enclaves
+/package.json                    @ingemar-enclaves
+/package-lock.json               @ingemar-enclaves
+/tsconfig.json                   @ingemar-enclaves
+/tsconfig.build.json             @ingemar-enclaves
+/.solhint.json                   @ingemar-enclaves
+/.gitattributes                  @ingemar-enclaves
+
+# Security policy itself.
+/SECURITY.md                     @ingemar-enclaves
