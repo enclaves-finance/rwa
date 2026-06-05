@@ -1,0 +1,63 @@
+{
+  "name": "Example Biomass Rights",
+  "symbol": "EBIO",
+  "contractKind": "BIOMASS",
+  "enclaveId": "ENCLAVE_DEFAULT",
+  "jurisdiction": "SKN",
+  "trustClass": 5,
+  "spvEntityId": "EXAMPLE_BIOMASS_SPV",
+  "spvJurisdiction": "SKN",
+  "spvLegalStructure": "SPV_LLC",
+  "spvRegistryId": "REG_EXAMPLE_001",
+  "issuer": "0x0000000000000000000000000000000000000000",
+  "platformAgent": "0x0000000000000000000000000000000000000000",
+  "spvOperator": "0x0000000000000000000000000000000000000000",
+  "maxSupply": 4000,
+  "coolingPeriod": 259200,
+  "initialValuationUsd": 20000000,
+  "denominationCurrency": "USD",
+  "valuationMethodology": "APPRAISAL",
+  "metadataURI": "ipfs://Qm...",
+  "salt": "EXAMPLE_BIOMASS_v1",
+  "biomass": {
+    "landRegistryRef": "EXAMPLE_LAND_REG",
+    "totalHectares": 20000,
+    "hectaresPerToken": 5,
+    "biomassType": "EXAMPLE_FEEDSTOCK",
+    "certificationStandard": "APPRAISAL",
+    "countryCode": "XX",
+    "regionCode": "EXAMPLE_REGION",
+    "farms": [
+      {
+        "farmId": "FARM_A",
+        "farmName": "Farm A",
+        "hectares": 5500,
+        "latitude": 0,
+        "longitude": 0,
+        "region": "Example Region"
+      },
+      {
+        "farmId": "FARM_B",
+        "farmName": "Farm B",
+        "hectares": 9500,
+        "latitude": 0,
+        "longitude": 0,
+        "region": "Example Region"
+      },
+      {
+        "farmId": "FARM_C",
+        "farmName": "Farm C",
+        "hectares": 5000,
+        "latitude": 0,
+        "longitude": 0,
+        "region": "Example Region"
+      }
+    ],
+    "revenueStartDate": 1727740800,
+    "revenueEndDate": 1759190400,
+    "biocharRatePerTon": 4800,
+    "woodVinegarRatePerLitre": 96,
+    "distributionFrequency": 7776000,
+    "minimumRaiseAmount": 500000
+  }
+}

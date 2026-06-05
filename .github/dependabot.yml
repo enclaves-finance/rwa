@@ -1,0 +1,29 @@
+# Dependabot configuration.
+#
+# We intentionally do NOT opt in to ecosystem-update PRs that would land
+# automatically; they're noise and the failure mode (a quietly malicious
+# transitive dep slipping in) is exactly the kind of supply-chain risk
+# this whole setup exists to avoid. GitHub already ships *security*
+# advisories for every dependency on every repo — that signal is
+# automatic and does not need a Dependabot config entry.
+#
+# Instead, this file is scoped to ONE thing: keep our GitHub Actions
+# pinned to commit SHAs but get a PR whenever a new release is
+# available so we can manually read the diff before bumping.
+#
+# https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'ci'
+      include: scope
+    labels:
+      - dependencies
+      - github-actions
