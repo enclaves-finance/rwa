@@ -17,7 +17,7 @@ describe('E2E — FrozenAddressFlow', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -41,7 +41,7 @@ describe('E2E — FrozenAddressFlow', () => {
       deployer,
       platformAgent,
       issuer,
-      spvOperator,
+      enclaveOperator,
       treasury,
       alice,
       bob,
@@ -62,7 +62,7 @@ describe('E2E — FrozenAddressFlow', () => {
     }));
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob, carol, recoveryWallet],
+      [issuer, enclaveOperator, alice, bob, carol, recoveryWallet],
       C.COUNTRY.NA,
       deployer
     );
@@ -70,7 +70,7 @@ describe('E2E — FrozenAddressFlow', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -101,12 +101,12 @@ describe('E2E — FrozenAddressFlow', () => {
           carol.address,
           recoveryWallet.address,
           issuer.address,
-          spvOperator.address,
+          enclaveOperator.address,
         ],
         true
       );
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     await F.fundAndBond({
       encl,
       staking,
@@ -196,9 +196,9 @@ describe('E2E — FrozenAddressFlow', () => {
 
   it('freeze persists across suspend / resume cycles', async () => {
     await token.connect(platformAgent).setAddressFrozen(alice.address, true);
-    await token.connect(spvOperator).suspend();
+    await token.connect(enclaveOperator).suspend();
     expect(await token.assetState()).to.equal(BigInt(C.STATE.SUSPENDED));
-    await token.connect(spvOperator).resume();
+    await token.connect(enclaveOperator).resume();
     expect(await token.isFrozen(alice.address)).to.equal(
       true,
       'freeze must survive suspend cycle'
@@ -209,7 +209,7 @@ describe('E2E — FrozenAddressFlow', () => {
   it('non-platform cannot freeze (only the platform agent is authorised)', async () => {
     await expect(token.connect(issuer).setAddressFrozen(bob.address, true)).to.be
       .reverted;
-    await expect(token.connect(spvOperator).setAddressFrozen(bob.address, true)).to.be
+    await expect(token.connect(enclaveOperator).setAddressFrozen(bob.address, true)).to.be
       .reverted;
     expect(await token.isFrozen(bob.address)).to.equal(false);
   });

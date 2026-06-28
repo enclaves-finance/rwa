@@ -77,7 +77,7 @@ describe('E2E — Multi-token Enclave', () => {
     const biomassBase = F.biomassBaseParams({
       issuer: biomassIssuer,
       platformAgent,
-      spvOperator: biomassSPV,
+      enclaveOperator: biomassSPV,
       ir,
       compliance,
       staking,
@@ -101,7 +101,7 @@ describe('E2E — Multi-token Enclave', () => {
     const reBase = F.biomassBaseParams({
       issuer: realEstateIssuer,
       platformAgent,
-      spvOperator: realEstateSPV,
+      enclaveOperator: realEstateSPV,
       ir,
       compliance,
       staking,
@@ -148,8 +148,8 @@ describe('E2E — Multi-token Enclave', () => {
     expect(byIssuerRE.length).to.equal(1);
     expect(byIssuerBio[0]).to.not.equal(byIssuerRE[0]);
 
-    const bySPVBio = await factory.getTokensBySPV(biomassSPV.address);
-    const bySPVRE = await factory.getTokensBySPV(realEstateSPV.address);
+    const bySPVBio = await factory.getTokensByEnclaveOperator(biomassSPV.address);
+    const bySPVRE = await factory.getTokensByEnclaveOperator(realEstateSPV.address);
     expect(bySPVBio[0]).to.equal(biomassToken.target);
     expect(bySPVRE[0]).to.equal(realEstateToken.target);
   });

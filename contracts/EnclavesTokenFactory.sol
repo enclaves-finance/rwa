@@ -50,7 +50,7 @@ contract EnclavesTokenFactory is AccessControl {
         address tokenAddress;
         bytes32 enclaveId;
         address issuer;
-        address spvOperator;
+        address enclaveOperator;
         bytes32 spvEntityId;
         uint8 trustClass;
         /// On-chain dispatch key — `keccak256(toUtf8Bytes(KIND_STRING))`.
@@ -64,7 +64,7 @@ contract EnclavesTokenFactory is AccessControl {
 
     mapping(bytes32 => address[]) public tokensByEnclave;
     mapping(address => address[]) public tokensByIssuer;
-    mapping(address => address[]) public tokensBySPV;
+    mapping(address => address[]) public tokensByEnclaveOperator;
     /// @notice Lookup map from a `contractKind` hash to the tokens deployed
     ///         under that kind.
     mapping(bytes32 => address[]) public tokensByContractKind;
@@ -80,7 +80,7 @@ contract EnclavesTokenFactory is AccessControl {
         bytes32 indexed enclaveId,
         bytes32 indexed contractKind,
         address issuer,
-        address spvOperator
+        address enclaveOperator
     );
     event IdentityRegistryChanged(address indexed prev, address indexed next);
     event ComplianceChanged(address indexed prev, address indexed next);
@@ -165,7 +165,7 @@ contract EnclavesTokenFactory is AccessControl {
         /// On-chain implementation dispatch key (formerly `assetCategory`).
         bytes32 contractKind;
         address issuer;
-        address spvOperator;
+        address enclaveOperator;
         bytes32 spvEntityId;
         uint8 trustClass;
         bytes32 denominationCurrency;
@@ -199,7 +199,7 @@ contract EnclavesTokenFactory is AccessControl {
             tokenAddress: token,
             enclaveId: enclaveId,
             issuer: req.issuer,
-            spvOperator: req.spvOperator,
+            enclaveOperator: req.enclaveOperator,
             spvEntityId: req.spvEntityId,
             trustClass: req.trustClass,
             contractKind: req.contractKind,
@@ -210,10 +210,10 @@ contract EnclavesTokenFactory is AccessControl {
         allTokens.push(token);
         tokensByEnclave[enclaveId].push(token);
         tokensByIssuer[req.issuer].push(token);
-        tokensBySPV[req.spvOperator].push(token);
+        tokensByEnclaveOperator[req.enclaveOperator].push(token);
         tokensByContractKind[req.contractKind].push(token);
 
-        emit TokenDeployed(token, enclaveId, req.contractKind, req.issuer, req.spvOperator);
+        emit TokenDeployed(token, enclaveId, req.contractKind, req.issuer, req.enclaveOperator);
 
         return token;
     }
@@ -240,8 +240,8 @@ contract EnclavesTokenFactory is AccessControl {
         return tokensByIssuer[issuer_];
     }
 
-    function getTokensBySPV(address spv) external view returns (address[] memory) {
-        return tokensBySPV[spv];
+    function getTokensByEnclaveOperator(address enclaveOperator) external view returns (address[] memory) {
+        return tokensByEnclaveOperator[enclaveOperator];
     }
 
     function getTokensByContractKind(bytes32 contractKind) external view returns (address[] memory) {

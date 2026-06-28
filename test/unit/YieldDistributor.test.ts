@@ -10,7 +10,7 @@ describe('YieldDistributor', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -31,7 +31,7 @@ describe('YieldDistributor', () => {
       deployer,
       platformAgent,
       issuer,
-      spvOperator,
+      enclaveOperator,
       treasury,
       alice,
       bob,
@@ -52,7 +52,7 @@ describe('YieldDistributor', () => {
 
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob],
+      [issuer, enclaveOperator, alice, bob],
       C.COUNTRY.NA,
       deployer
     );
@@ -60,7 +60,7 @@ describe('YieldDistributor', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -83,7 +83,7 @@ describe('YieldDistributor', () => {
       .batchSetSpvApproval(token.target, [alice.address, bob.address], true);
 
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     await F.fundAndBond({
       encl,
       staking,

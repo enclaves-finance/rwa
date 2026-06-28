@@ -10,7 +10,7 @@ describe('EnclavesBiomass (contractKind)', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
 
@@ -23,7 +23,7 @@ describe('EnclavesBiomass (contractKind)', () => {
   let token: F.EnclavesBiomass;
 
   before(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice] =
       await ethers.getSigners();
   });
 
@@ -39,11 +39,11 @@ describe('EnclavesBiomass (contractKind)', () => {
       ir,
       staking,
     }));
-    await F.registerInvestors(ir, [issuer, spvOperator, alice], C.COUNTRY.NA, deployer);
+    await F.registerInvestors(ir, [issuer, enclaveOperator, alice], C.COUNTRY.NA, deployer);
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -91,7 +91,7 @@ describe('EnclavesBiomass (contractKind)', () => {
       const base = F.biomassBaseParams({
         issuer,
         platformAgent,
-        spvOperator,
+        enclaveOperator,
         ir,
         compliance,
         staking,

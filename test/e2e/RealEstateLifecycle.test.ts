@@ -22,7 +22,7 @@ describe('E2E — Real Estate lifecycle', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -46,7 +46,7 @@ describe('E2E — Real Estate lifecycle', () => {
   let maturityAt: number;
 
   before(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice, bob] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice, bob] =
       await ethers.getSigners();
   });
 
@@ -64,7 +64,7 @@ describe('E2E — Real Estate lifecycle', () => {
     }));
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob],
+      [issuer, enclaveOperator, alice, bob],
       C.COUNTRY.DE,
       deployer
     );
@@ -75,7 +75,7 @@ describe('E2E — Real Estate lifecycle', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -119,7 +119,7 @@ describe('E2E — Real Estate lifecycle', () => {
       .connect(platformAgent)
       .batchSetSpvApproval(
         token.target,
-        [alice.address, bob.address, issuer.address, spvOperator.address],
+        [alice.address, bob.address, issuer.address, enclaveOperator.address],
         true
       );
 
@@ -132,7 +132,7 @@ describe('E2E — Real Estate lifecycle', () => {
 
   it('Phase 4 — platform + SPV satisfy the mint conditions', async () => {
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     expect(await token.assetState()).to.equal(BigInt(C.STATE.MINT_READY));
   });
 
@@ -199,8 +199,8 @@ describe('E2E — Real Estate lifecycle', () => {
     }
     expect(await token.totalSupply()).to.equal(0n);
 
-    await token.connect(spvOperator).initiateRedemption();
-    await token.connect(spvOperator).retire();
+    await token.connect(enclaveOperator).initiateRedemption();
+    await token.connect(enclaveOperator).retire();
     expect(await token.assetState()).to.equal(BigInt(C.STATE.RETIRED));
 
     await staking.connect(issuer).unbond(token.target);

@@ -21,7 +21,7 @@ describe('E2E — Lifecycle (step-by-step)', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -48,7 +48,7 @@ describe('E2E — Lifecycle (step-by-step)', () => {
   let maturityAt: number;
 
   before(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice, bob, carol, dave] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice, bob, carol, dave] =
       await ethers.getSigners();
   });
 
@@ -122,7 +122,7 @@ describe('E2E — Lifecycle (step-by-step)', () => {
     it('4.1  identity-registers issuer, SPV and investors', async () => {
       await F.registerInvestors(
         ir,
-        [issuer, spvOperator, alice, bob, carol, dave],
+        [issuer, enclaveOperator, alice, bob, carol, dave],
         C.COUNTRY.NA,
         deployer
       );
@@ -133,7 +133,7 @@ describe('E2E — Lifecycle (step-by-step)', () => {
       const base = F.biomassBaseParams({
         issuer,
         platformAgent,
-        spvOperator,
+        enclaveOperator,
         ir,
         compliance,
         staking,
@@ -169,7 +169,7 @@ describe('E2E — Lifecycle (step-by-step)', () => {
       expect(await factory.allTokens(0)).to.equal(token.target);
       const rec = await factory.tokenRegistry(token.target);
       expect(rec.issuer).to.equal(issuer.address);
-      expect(rec.spvOperator).to.equal(spvOperator.address);
+      expect(rec.enclaveOperator).to.equal(enclaveOperator.address);
       expect(rec.contractKind).to.equal(C.CONTRACT_KIND.BIOMASS);
     });
 
@@ -184,7 +184,7 @@ describe('E2E — Lifecycle (step-by-step)', () => {
       const base = F.biomassBaseParams({
         issuer,
         platformAgent,
-        spvOperator,
+        enclaveOperator,
         ir,
         compliance,
         staking,
@@ -217,7 +217,7 @@ describe('E2E — Lifecycle (step-by-step)', () => {
             carol.address,
             dave.address,
             issuer.address,
-            spvOperator.address,
+            enclaveOperator.address,
           ],
           true
         );
@@ -286,7 +286,7 @@ describe('E2E — Lifecycle (step-by-step)', () => {
 
   describe('Phase 8 — SPV approves the mint', () => {
     it('8.1  SPV calls approveMint() → state transitions to MintReady', async () => {
-      await expect(token.connect(spvOperator).approveMint()).to.emit(
+      await expect(token.connect(enclaveOperator).approveMint()).to.emit(
         token,
         'AssetStateChanged'
       );
@@ -457,14 +457,14 @@ describe('E2E — Lifecycle (step-by-step)', () => {
 
   describe('Phase 16 — Suspend / Resume by SPV', () => {
     it('16.1  SPV suspends the asset → transfers blocked', async () => {
-      await token.connect(spvOperator).suspend();
+      await token.connect(enclaveOperator).suspend();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.SUSPENDED));
       expect(await token.paused()).to.equal(true);
       await expect(token.connect(alice).transfer(bob.address, toEth('1'))).to.be.reverted;
     });
 
     it('16.2  SPV resumes → transfers re-open', async () => {
-      await token.connect(spvOperator).resume();
+      await token.connect(enclaveOperator).resume();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.ACTIVE));
       await token.connect(alice).transfer(bob.address, toEth('1'));
       expect(await token.balanceOf(bob.address)).to.equal(toEth('1501'));
@@ -550,12 +550,12 @@ describe('E2E — Lifecycle (step-by-step)', () => {
 
   describe('Phase 21 — SPV retires the asset', () => {
     it('21.1  SPV initiates redemption', async () => {
-      await token.connect(spvOperator).initiateRedemption();
+      await token.connect(enclaveOperator).initiateRedemption();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.REDEEMING));
     });
 
     it('21.2  SPV retires the asset', async () => {
-      await token.connect(spvOperator).retire();
+      await token.connect(enclaveOperator).retire();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.RETIRED));
     });
   });

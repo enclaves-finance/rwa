@@ -34,7 +34,7 @@ import { ethers, network } from 'hardhat';
 interface TokenCfg {
   issuer: string;
   platformAgent: string;
-  spvOperator: string;
+  enclaveOperator: string;
   enclaveId: string;
   jurisdiction: string;
   trustClass: number;
@@ -154,7 +154,7 @@ async function main(): Promise<void> {
     return {
       issuer: cfg.issuer,
       platformAgent: cfg.platformAgent,
-      spvOperator: cfg.spvOperator,
+      enclaveOperator: cfg.enclaveOperator,
       // Canonical encoding: keccak256 of the upper-cased Enclave code. Must
       // equal the factory's immutable `enclaveId`.
       enclaveId: cfg.enclaveId.startsWith('0x')
@@ -286,7 +286,7 @@ async function main(): Promise<void> {
   const tx = await factory.deploy({
     contractKind: base.contractKind as string,
     issuer: base.issuer as string,
-    spvOperator: base.spvOperator as string,
+    enclaveOperator: base.enclaveOperator as string,
     spvEntityId: base.spvEntityId as string,
     trustClass: base.trustClass as number,
     denominationCurrency: base.denominationCurrency as string,

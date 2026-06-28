@@ -17,7 +17,7 @@ describe('EnclavesRWA (base behavior)', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -33,7 +33,7 @@ describe('EnclavesRWA (base behavior)', () => {
   let token: F.EnclavesBiomass;
 
   before(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice, bob, carol, intruder] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice, bob, carol, intruder] =
       await ethers.getSigners();
   });
 
@@ -56,7 +56,7 @@ describe('EnclavesRWA (base behavior)', () => {
 
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob, carol],
+      [issuer, enclaveOperator, alice, bob, carol],
       C.COUNTRY.NA,
       deployer
     );
@@ -64,7 +64,7 @@ describe('EnclavesRWA (base behavior)', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -88,7 +88,7 @@ describe('EnclavesRWA (base behavior)', () => {
       .connect(platformAgent)
       .batchSetSpvApproval(
         token.target,
-        [alice.address, bob.address, carol.address, spvOperator.address, issuer.address],
+        [alice.address, bob.address, carol.address, enclaveOperator.address, issuer.address],
         true
       );
     return { base, biomass };
@@ -99,7 +99,7 @@ describe('EnclavesRWA (base behavior)', () => {
 
     it('records every immutable identity field', async () => {
       expect(await token.issuer()).to.equal(issuer.address);
-      expect(await token.spvOperator()).to.equal(spvOperator.address);
+      expect(await token.enclaveOperator()).to.equal(enclaveOperator.address);
       expect(await token.platformAgent()).to.equal(platformAgent.address);
       expect(await token.trustClass()).to.equal(BigInt(C.TRUST_CLASS.V));
       expect(await token.contractKind()).to.equal(C.CONTRACT_KIND.BIOMASS);
@@ -117,7 +117,7 @@ describe('EnclavesRWA (base behavior)', () => {
       const base = F.biomassBaseParams({
         issuer,
         platformAgent,
-        spvOperator,
+        enclaveOperator,
         ir,
         compliance,
         staking,
@@ -151,21 +151,21 @@ describe('EnclavesRWA (base behavior)', () => {
         .connect(platformAgent)
         .setMintCondition('documentGatingSatisfied', true);
       expect(await token.assetState()).to.equal(BigInt(C.STATE.REGISTERED));
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.MINT_READY));
     });
 
     it('SPV revoke during MintReady bumps state back to Registered', async () => {
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.MINT_READY));
-      await token.connect(spvOperator).revokeMintApproval();
+      await token.connect(enclaveOperator).revokeMintApproval();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.REGISTERED));
     });
 
     it('mint blocked without a bond even after MintReady', async () => {
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       expect(await token.isMintReady()).to.equal(false);
       await expect(token.connect(platformAgent).mint(alice.address, 1)).to.be.reverted;
     });
@@ -176,7 +176,7 @@ describe('EnclavesRWA (base behavior)', () => {
         salt: k('COOLING_TEST'),
       });
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -195,7 +195,7 @@ describe('EnclavesRWA (base behavior)', () => {
 
     it('rejects mint to non-verified address', async () => {
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -212,7 +212,7 @@ describe('EnclavesRWA (base behavior)', () => {
 
     it('rejects mint exceeding maxSupply', async () => {
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -227,7 +227,7 @@ describe('EnclavesRWA (base behavior)', () => {
 
     it('non-platform cannot mint', async () => {
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -242,7 +242,7 @@ describe('EnclavesRWA (base behavior)', () => {
 
     it('full-supply mint auto-finalizes and transitions to Active', async () => {
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -268,7 +268,7 @@ describe('EnclavesRWA (base behavior)', () => {
     beforeEach(async () => {
       await buildAndDeployToken();
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -299,7 +299,7 @@ describe('EnclavesRWA (base behavior)', () => {
     beforeEach(async () => {
       await buildAndDeployToken();
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -341,7 +341,7 @@ describe('EnclavesRWA (base behavior)', () => {
     beforeEach(async () => {
       await buildAndDeployToken();
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -388,7 +388,7 @@ describe('EnclavesRWA (base behavior)', () => {
     beforeEach(async () => {
       await buildAndDeployToken();
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -410,21 +410,21 @@ describe('EnclavesRWA (base behavior)', () => {
     });
 
     it('suspend halts transfers; resume reopens them', async () => {
-      await token.connect(spvOperator).suspend();
+      await token.connect(enclaveOperator).suspend();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.SUSPENDED));
       expect(await token.paused()).to.equal(true);
       const res = await token.preTransferCheck(alice.address, bob.address, 1);
       expect(res.code).to.equal(BigInt(C.REASON.PAUSED));
       await expect(token.connect(alice).transfer(bob.address, 1)).to.be.reverted;
 
-      await token.connect(spvOperator).resume();
+      await token.connect(enclaveOperator).resume();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.ACTIVE));
       expect(await token.paused()).to.equal(false);
       await token.connect(alice).transfer(bob.address, 1);
     });
 
     it('initiateRedemption blocks transfers but allows redeemBurn', async () => {
-      await token.connect(spvOperator).initiateRedemption();
+      await token.connect(enclaveOperator).initiateRedemption();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.REDEEMING));
       await expect(token.connect(alice).transfer(bob.address, 1)).to.be.reverted;
       const before = await token.balanceOf(alice.address);
@@ -433,8 +433,8 @@ describe('EnclavesRWA (base behavior)', () => {
     });
 
     it('retire transitions and blocks redeemBurn outside Redeeming|Retired', async () => {
-      await token.connect(spvOperator).initiateRedemption();
-      await token.connect(spvOperator).retire();
+      await token.connect(enclaveOperator).initiateRedemption();
+      await token.connect(enclaveOperator).retire();
       expect(await token.assetState()).to.equal(BigInt(C.STATE.RETIRED));
       await token.connect(alice).redeemBurn(10);
     });
@@ -444,7 +444,7 @@ describe('EnclavesRWA (base behavior)', () => {
     beforeEach(async () => {
       await buildAndDeployToken();
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -477,7 +477,7 @@ describe('EnclavesRWA (base behavior)', () => {
 
     it('bypasses pause', async () => {
       await token.connect(platformAgent).mint(alice.address, 3000);
-      await token.connect(spvOperator).suspend();
+      await token.connect(enclaveOperator).suspend();
       expect(await token.paused()).to.equal(true);
       await token
         .connect(platformAgent)
@@ -542,15 +542,15 @@ describe('EnclavesRWA (base behavior)', () => {
     beforeEach(async () => buildAndDeployToken());
 
     it('issuer rotates the SPV operator', async () => {
-      await expect(token.connect(issuer).setSPVOperator(carol.address)).to.emit(
+      await expect(token.connect(issuer).setEnclaveOperator(carol.address)).to.emit(
         token,
-        'SPVOperatorChanged'
+        'EnclaveOperatorChanged'
       );
-      expect(await token.spvOperator()).to.equal(carol.address);
+      expect(await token.enclaveOperator()).to.equal(carol.address);
     });
 
     it('non-issuer cannot rotate the SPV operator', async () => {
-      await expect(token.connect(platformAgent).setSPVOperator(carol.address)).to.be
+      await expect(token.connect(platformAgent).setEnclaveOperator(carol.address)).to.be
         .reverted;
     });
 
@@ -564,7 +564,7 @@ describe('EnclavesRWA (base behavior)', () => {
     beforeEach(async () => {
       await buildAndDeployToken();
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -657,7 +657,7 @@ describe('EnclavesRWA (base behavior)', () => {
       await setupMaturity({ pricePerToken: toUSDC('5000') });
 
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -690,7 +690,7 @@ describe('EnclavesRWA (base behavior)', () => {
     it('redeemAtMaturity reverts when escrow is under-funded', async () => {
       await setupMaturity({ pricePerToken: toUSDC('5000') });
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,
@@ -711,7 +711,7 @@ describe('EnclavesRWA (base behavior)', () => {
     it('preTransferCheck returns code OK when no lockup is configured', async () => {
       await buildAndDeployToken();
       await F.setAllMintConditions(token as any, platformAgent);
-      await token.connect(spvOperator).approveMint();
+      await token.connect(enclaveOperator).approveMint();
       await F.fundAndBond({
         encl,
         staking,

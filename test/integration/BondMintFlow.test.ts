@@ -21,7 +21,7 @@ describe('Integration — bond / mint flow', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -36,7 +36,7 @@ describe('Integration — bond / mint flow', () => {
   const ASSET_VALUE = 20_000_000;
 
   beforeEach(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice, bob] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice, bob] =
       await ethers.getSigners();
 
     ({ encl, staking, ir } = await F.deployGlobals({
@@ -52,7 +52,7 @@ describe('Integration — bond / mint flow', () => {
     }));
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob],
+      [issuer, enclaveOperator, alice, bob],
       C.COUNTRY.NA,
       deployer
     );
@@ -60,7 +60,7 @@ describe('Integration — bond / mint flow', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -88,7 +88,7 @@ describe('Integration — bond / mint flow', () => {
     await F.setAllMintConditions(token as any, platformAgent);
     expect(await token.assetState()).to.equal(BigInt(C.STATE.REGISTERED));
 
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     expect(await token.assetState()).to.equal(BigInt(C.STATE.MINT_READY));
     expect(await token.isMintReady()).to.equal(false);
 
@@ -112,7 +112,7 @@ describe('Integration — bond / mint flow', () => {
 
   it('slashing below required disables next mint until top-up', async () => {
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     await F.fundAndBond({
       encl,
       staking,
@@ -140,7 +140,7 @@ describe('Integration — bond / mint flow', () => {
 
   it('SPV revoking approval after MintReady but before mint stops the flow', async () => {
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     await F.fundAndBond({
       encl,
       staking,
@@ -152,14 +152,14 @@ describe('Integration — bond / mint flow', () => {
     });
     await advanceTime(70);
 
-    await token.connect(spvOperator).revokeMintApproval();
+    await token.connect(enclaveOperator).revokeMintApproval();
     expect(await token.assetState()).to.equal(BigInt(C.STATE.REGISTERED));
     await expect(token.connect(platformAgent).mint(alice.address, 1)).to.be.reverted;
   });
 
   it('cannot mint past maxSupply across multiple batches', async () => {
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     await F.fundAndBond({
       encl,
       staking,

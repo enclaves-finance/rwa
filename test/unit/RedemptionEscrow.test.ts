@@ -10,7 +10,7 @@ describe('RedemptionEscrow', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let intruder: HardhatEthersSigner;
@@ -26,7 +26,7 @@ describe('RedemptionEscrow', () => {
   let escrow: F.RedemptionEscrow;
 
   beforeEach(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice, intruder] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice, intruder] =
       await ethers.getSigners();
 
     ({ encl, staking, ir } = await F.deployGlobals({
@@ -41,12 +41,12 @@ describe('RedemptionEscrow', () => {
       staking,
     }));
 
-    await F.registerInvestors(ir, [issuer, spvOperator, alice], C.COUNTRY.NA, deployer);
+    await F.registerInvestors(ir, [issuer, enclaveOperator, alice], C.COUNTRY.NA, deployer);
 
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,

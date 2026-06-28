@@ -10,7 +10,7 @@ describe('EnclavesTokenFactory', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let intruder: HardhatEthersSigner;
 
   let encl: F.ENCL;
@@ -21,7 +21,7 @@ describe('EnclavesTokenFactory', () => {
   let impls: F.EnclaveImpls;
 
   beforeEach(async () => {
-    [deployer, platformAgent, issuer, spvOperator, intruder] = await ethers.getSigners();
+    [deployer, platformAgent, issuer, enclaveOperator, intruder] = await ethers.getSigners();
 
     ({ encl, staking, ir } = await F.deployGlobals({
       deployer,
@@ -107,7 +107,7 @@ describe('EnclavesTokenFactory', () => {
       return F.biomassBaseParams({
         issuer,
         platformAgent,
-        spvOperator,
+        enclaveOperator,
         ir,
         compliance,
         staking,
@@ -128,7 +128,7 @@ describe('EnclavesTokenFactory', () => {
       const tx = await factory.connect(deployer).deploy({
         contractKind: C.CONTRACT_KIND.BIOMASS,
         issuer: issuer.address,
-        spvOperator: spvOperator.address,
+        enclaveOperator: enclaveOperator.address,
         spvEntityId: base.spvEntityId as string,
         trustClass: base.trustClass as number,
         denominationCurrency: base.denominationCurrency as string,
@@ -158,20 +158,20 @@ describe('EnclavesTokenFactory', () => {
       expect(evArgs!.enclaveId).to.equal(C.ENCLAVE_ID);
       expect(evArgs!.contractKind).to.equal(C.CONTRACT_KIND.BIOMASS);
       expect(evArgs!.issuer).to.equal(issuer.address);
-      expect(evArgs!.spvOperator).to.equal(spvOperator.address);
+      expect(evArgs!.enclaveOperator).to.equal(enclaveOperator.address);
 
       const tokenAddress = evArgs!.token as string;
       const rec = await factory.tokenRegistry(tokenAddress);
       expect(rec.tokenAddress).to.equal(tokenAddress);
       expect(rec.issuer).to.equal(issuer.address);
-      expect(rec.spvOperator).to.equal(spvOperator.address);
+      expect(rec.enclaveOperator).to.equal(enclaveOperator.address);
 
       expect(await factory.allTokens(0)).to.equal(tokenAddress);
       expect(await factory.allTokensLength()).to.equal(1n);
       expect(await factory.getTokensByIssuer(issuer.address)).to.deep.equal([
         tokenAddress,
       ]);
-      expect(await factory.getTokensBySPV(spvOperator.address)).to.deep.equal([
+      expect(await factory.getTokensByEnclaveOperator(enclaveOperator.address)).to.deep.equal([
         tokenAddress,
       ]);
       expect(
@@ -184,7 +184,7 @@ describe('EnclavesTokenFactory', () => {
         factory.connect(deployer).deploy({
           contractKind: k('UNREG_CAT'),
           issuer: issuer.address,
-          spvOperator: spvOperator.address,
+          enclaveOperator: enclaveOperator.address,
           spvEntityId: toBytes32('X'),
           trustClass: 1,
           denominationCurrency: k('USD'),
@@ -206,7 +206,7 @@ describe('EnclavesTokenFactory', () => {
         factory.connect(deployer).deploy({
           contractKind: C.CONTRACT_KIND.BIOMASS,
           issuer: issuer.address,
-          spvOperator: spvOperator.address,
+          enclaveOperator: enclaveOperator.address,
           spvEntityId: base.spvEntityId as string,
           trustClass: base.trustClass as number,
           denominationCurrency: base.denominationCurrency as string,
@@ -226,7 +226,7 @@ describe('EnclavesTokenFactory', () => {
         factory.connect(intruder).deploy({
           contractKind: C.CONTRACT_KIND.BIOMASS,
           issuer: issuer.address,
-          spvOperator: spvOperator.address,
+          enclaveOperator: enclaveOperator.address,
           spvEntityId: base.spvEntityId as string,
           trustClass: base.trustClass as number,
           denominationCurrency: base.denominationCurrency as string,

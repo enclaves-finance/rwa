@@ -16,7 +16,7 @@ describe('Integration — compliance transfer rules', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -38,7 +38,7 @@ describe('Integration — compliance transfer rules', () => {
       deployer,
       platformAgent,
       issuer,
-      spvOperator,
+      enclaveOperator,
       treasury,
       alice,
       bob,
@@ -72,12 +72,12 @@ describe('Integration — compliance transfer rules', () => {
       .setProfile(issuer.address, issuer.address, C.COUNTRY.NA, true);
     await ir
       .connect(deployer)
-      .setProfile(spvOperator.address, spvOperator.address, C.COUNTRY.NA, true);
+      .setProfile(enclaveOperator.address, enclaveOperator.address, C.COUNTRY.NA, true);
 
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -105,7 +105,7 @@ describe('Integration — compliance transfer rules', () => {
       );
 
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     await F.fundAndBond({
       encl,
       staking,

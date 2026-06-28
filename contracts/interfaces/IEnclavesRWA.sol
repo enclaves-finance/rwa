@@ -35,7 +35,7 @@ interface IEnclavesRWA {
     // SPV identification
     // ---------------------------------------------------------------------
 
-    function spvOperator() external view returns (address);
+    function enclaveOperator() external view returns (address);
     function spvEntityId() external view returns (bytes32);
     function spvJurisdiction() external view returns (bytes32);
     function spvLegalStructure() external view returns (bytes32);

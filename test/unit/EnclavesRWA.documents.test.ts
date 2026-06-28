@@ -24,7 +24,7 @@ describe('EnclavesRWA (asset documents)', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -40,7 +40,7 @@ describe('EnclavesRWA (asset documents)', () => {
   let token: F.EnclavesBiomass;
 
   before(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice, bob, carol, intruder] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice, bob, carol, intruder] =
       await ethers.getSigners();
   });
 
@@ -72,7 +72,7 @@ describe('EnclavesRWA (asset documents)', () => {
 
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob, carol],
+      [issuer, enclaveOperator, alice, bob, carol],
       C.COUNTRY.NA,
       deployer
     );
@@ -80,7 +80,7 @@ describe('EnclavesRWA (asset documents)', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,

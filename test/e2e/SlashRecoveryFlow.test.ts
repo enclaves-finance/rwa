@@ -18,7 +18,7 @@ describe('E2E — SlashRecoveryFlow', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -41,7 +41,7 @@ describe('E2E — SlashRecoveryFlow', () => {
   let topUpAmount: bigint;
 
   before(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice, bob] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice, bob] =
       await ethers.getSigners();
 
     ({ encl, staking, ir } = await F.deployGlobals({
@@ -57,7 +57,7 @@ describe('E2E — SlashRecoveryFlow', () => {
     }));
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob],
+      [issuer, enclaveOperator, alice, bob],
       C.COUNTRY.NA,
       deployer
     );
@@ -65,7 +65,7 @@ describe('E2E — SlashRecoveryFlow', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -90,11 +90,11 @@ describe('E2E — SlashRecoveryFlow', () => {
       .connect(platformAgent)
       .batchSetSpvApproval(
         token.target,
-        [alice.address, bob.address, issuer.address, spvOperator.address],
+        [alice.address, bob.address, issuer.address, enclaveOperator.address],
         true
       );
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
   });
 
   it('issuer bonds exactly the required ENCL — isBonded becomes true', async () => {
@@ -201,8 +201,8 @@ describe('E2E — SlashRecoveryFlow', () => {
   });
 
   it('after retirement, issuer unbonds and recovers exactly the remaining amount', async () => {
-    await token.connect(spvOperator).initiateRedemption();
-    await token.connect(spvOperator).retire();
+    await token.connect(enclaveOperator).initiateRedemption();
+    await token.connect(enclaveOperator).retire();
 
     const remaining = (await staking.bonds(token.target)).amount;
     expect(remaining).to.equal(toEth('3201000'));

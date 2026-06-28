@@ -36,7 +36,7 @@ describe('E2E — DeploymentScriptIntegration', () => {
   let deployer: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
 
   const SALT = k('DEPLOYMENT_SMOKE_TEST_TOKEN');
@@ -49,7 +49,7 @@ describe('E2E — DeploymentScriptIntegration', () => {
   let impls: F.EnclaveImpls;
 
   before(async () => {
-    [deployer, treasury, issuer, spvOperator, alice] = await ethers.getSigners();
+    [deployer, treasury, issuer, enclaveOperator, alice] = await ethers.getSigners();
     ({ encl, staking, ir } = await F.deployGlobals({
       deployer,
       treasury: deployer,
@@ -165,7 +165,7 @@ describe('E2E — DeploymentScriptIntegration', () => {
     await ir.connect(deployer).setProfile(issuer.address, issuer.address, C.COUNTRY.NA, true);
     await ir
       .connect(deployer)
-      .setProfile(spvOperator.address, spvOperator.address, C.COUNTRY.NA, true);
+      .setProfile(enclaveOperator.address, enclaveOperator.address, C.COUNTRY.NA, true);
     await ir.connect(deployer).setProfile(alice.address, alice.address, C.COUNTRY.NA, true);
 
     const enclaveId = await factory.enclaveId();
@@ -173,7 +173,7 @@ describe('E2E — DeploymentScriptIntegration', () => {
     const base = {
       issuer: issuer.address,
       platformAgent: deployer.address,
-      spvOperator: spvOperator.address,
+      enclaveOperator: enclaveOperator.address,
       enclaveId,
       jurisdiction: toBytes32('SKN'),
       trustClass: C.TRUST_CLASS.V,
@@ -228,7 +228,7 @@ describe('E2E — DeploymentScriptIntegration', () => {
     const tx = await factory.connect(deployer).deploy({
       contractKind: C.CONTRACT_KIND.BIOMASS,
       issuer: issuer.address,
-      spvOperator: spvOperator.address,
+      enclaveOperator: enclaveOperator.address,
       spvEntityId: base.spvEntityId,
       trustClass: C.TRUST_CLASS.V,
       denominationCurrency: base.denominationCurrency,
@@ -271,7 +271,7 @@ describe('E2E — DeploymentScriptIntegration', () => {
       .connect(deployer)
       .batchSetSpvApproval(
         token.target,
-        [alice.address, issuer.address, spvOperator.address],
+        [alice.address, issuer.address, enclaveOperator.address],
         true
       );
 
@@ -279,7 +279,7 @@ describe('E2E — DeploymentScriptIntegration', () => {
     await token.connect(deployer).setMintCondition('spvActive', true);
     await token.connect(deployer).setMintCondition('noEncumbrances', true);
     await token.connect(deployer).setMintCondition('documentGatingSatisfied', true);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
 
     const required = await staking.getRequiredStake(C.TRUST_CLASS.V, 1_000_000);
     expect(required).to.equal(toEth('640000'));

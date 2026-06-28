@@ -190,7 +190,7 @@ describe('E2E — Cross-Enclave Isolation', () => {
     const baseA = F.biomassBaseParams({
       issuer: issuerA,
       platformAgent: platformAgentA,
-      spvOperator: spvA,
+      enclaveOperator: spvA,
       ir,
       compliance: A.compliance,
       staking,
@@ -213,7 +213,7 @@ describe('E2E — Cross-Enclave Isolation', () => {
     const baseB = F.biomassBaseParams({
       issuer: issuerB,
       platformAgent: platformAgentB,
-      spvOperator: spvB,
+      enclaveOperator: spvB,
       ir,
       compliance: B.compliance,
       staking,

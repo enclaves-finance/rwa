@@ -58,7 +58,7 @@ abstract contract EnclavesRWA is
     // =====================================================================
 
     error NotPlatform();
-    error NotSPV();
+    error NotEnclaveOperator();
     error NotIssuer();
     error InvalidState(AssetState expected, AssetState actual);
     error CoolingNotElapsed(uint64 readyAt);
@@ -86,8 +86,8 @@ abstract contract EnclavesRWA is
     /// @notice Platform backend (T-REX Agent equivalent — "onlyPlatform").
     address public platformAgent;
 
-    /// @notice Active SPV operator. Mutable through governed process.
-    address public override spvOperator;
+    /// @notice Active Enclave Operator. Mutable through governed process.
+    address public override enclaveOperator;
 
     /// @notice Address permitted to take balance snapshots in addition to the
     ///         platform agent (e.g. a {YieldDistributor}). Scoped to snapshots
@@ -255,7 +255,7 @@ abstract contract EnclavesRWA is
     event AssetStateChanged(AssetState indexed prev, AssetState indexed next);
     event MintConditionSet(string condition, bool value);
     event SupplyFinalized(uint256 totalIssued);
-    event SPVOperatorChanged(address indexed prev, address indexed next);
+    event EnclaveOperatorChanged(address indexed prev, address indexed next);
     event PlatformAgentChanged(address indexed prev, address indexed next);
     event SnapshotterChanged(address indexed prev, address indexed next);
     event OperationalFlagChanged(string flag, bool value, uint64 timestamp);
@@ -285,8 +285,8 @@ abstract contract EnclavesRWA is
         _;
     }
 
-    modifier onlySPV() {
-        if (msg.sender != spvOperator) revert NotSPV();
+    modifier onlyEnclaveOperator() {
+        if (msg.sender != enclaveOperator) revert NotEnclaveOperator();
         _;
     }
 
@@ -318,7 +318,7 @@ abstract contract EnclavesRWA is
         // identity
         address issuer;
         address platformAgent;
-        address spvOperator;
+        address enclaveOperator;
         bytes32 enclaveId;
         bytes32 jurisdiction;
         uint8 trustClass;
@@ -354,7 +354,7 @@ abstract contract EnclavesRWA is
     function __EnclavesRWA_init(InitParams calldata p) internal onlyInitializing {
         if (p.issuer == address(0)) revert InvalidAddress();
         if (p.platformAgent == address(0)) revert InvalidAddress();
-        if (p.spvOperator == address(0)) revert InvalidAddress();
+        if (p.enclaveOperator == address(0)) revert InvalidAddress();
         if (p.identityRegistry == address(0)) revert InvalidAddress();
         if (p.compliance == address(0)) revert InvalidAddress();
         if (p.stakingBond == address(0)) revert InvalidAddress();
@@ -367,7 +367,7 @@ abstract contract EnclavesRWA is
 
         issuer = p.issuer;
         platformAgent = p.platformAgent;
-        spvOperator = p.spvOperator;
+        enclaveOperator = p.enclaveOperator;
 
         enclaveId = p.enclaveId;
         jurisdiction = p.jurisdiction;
@@ -424,13 +424,13 @@ abstract contract EnclavesRWA is
 
     /// @notice SPV operator authorises minting. Required regardless of how
     ///         many platform conditions are satisfied.
-    function approveMint() external onlySPV {
+    function approveMint() external onlyEnclaveOperator {
         mintConditions.spvMintApproved = true;
         emit MintConditionSet("spvMintApproved", true);
         _maybeStartCooling();
     }
 
-    function revokeMintApproval() external onlySPV {
+    function revokeMintApproval() external onlyEnclaveOperator {
         mintConditions.spvMintApproved = false;
         emit MintConditionSet("spvMintApproved", false);
         if (assetState == AssetState.MintReady) {
@@ -547,13 +547,13 @@ abstract contract EnclavesRWA is
     // SPV-driven lifecycle
     // =====================================================================
 
-    function suspend() external onlySPV {
+    function suspend() external onlyEnclaveOperator {
         if (assetState != AssetState.Active) revert InvalidState(AssetState.Active, assetState);
         _transition(AssetState.Suspended);
         _pause();
     }
 
-    function resume() external onlySPV {
+    function resume() external onlyEnclaveOperator {
         if (assetState != AssetState.Suspended) {
             revert InvalidState(AssetState.Suspended, assetState);
         }
@@ -561,7 +561,7 @@ abstract contract EnclavesRWA is
         _unpause();
     }
 
-    function initiateRedemption() external onlySPV {
+    function initiateRedemption() external onlyEnclaveOperator {
         if (assetState != AssetState.Active && assetState != AssetState.Suspended) {
             revert InvalidState(AssetState.Active, assetState);
         }
@@ -569,7 +569,7 @@ abstract contract EnclavesRWA is
         if (!paused()) _pause();
     }
 
-    function retire() external onlySPV {
+    function retire() external onlyEnclaveOperator {
         if (assetState != AssetState.Redeeming) {
             revert InvalidState(AssetState.Redeeming, assetState);
         }
@@ -695,11 +695,11 @@ abstract contract EnclavesRWA is
     // Administration (mostly platform / issuer)
     // =====================================================================
 
-    function setSPVOperator(address newOperator) external onlyIssuer {
+    function setEnclaveOperator(address newOperator) external onlyIssuer {
         if (newOperator == address(0)) revert InvalidAddress();
-        address prev = spvOperator;
-        spvOperator = newOperator;
-        emit SPVOperatorChanged(prev, newOperator);
+        address prev = enclaveOperator;
+        enclaveOperator = newOperator;
+        emit EnclaveOperatorChanged(prev, newOperator);
     }
 
     function setPlatformAgent(address newAgent) external onlyIssuer {

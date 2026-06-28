@@ -26,7 +26,7 @@ describe('Security — audit findings regression', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -42,7 +42,7 @@ describe('Security — audit findings regression', () => {
   const ASSET_VALUE = 20_000_000;
 
   beforeEach(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury, alice, bob, intruder] =
+    [deployer, platformAgent, issuer, enclaveOperator, treasury, alice, bob, intruder] =
       await ethers.getSigners();
 
     ({ encl, staking, ir } = await F.deployGlobals({
@@ -58,7 +58,7 @@ describe('Security — audit findings regression', () => {
     }));
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob, intruder],
+      [issuer, enclaveOperator, alice, bob, intruder],
       C.COUNTRY.NA,
       deployer
     );
@@ -70,7 +70,7 @@ describe('Security — audit findings regression', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -94,7 +94,7 @@ describe('Security — audit findings regression', () => {
 
   async function makeBondable(token: F.EnclavesBiomass): Promise<void> {
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
   }
 
   async function mintTo(token: F.EnclavesBiomass): Promise<void> {
@@ -248,7 +248,7 @@ describe('Security — audit findings regression', () => {
       const base = F.biomassBaseParams({
         issuer,
         platformAgent,
-        spvOperator,
+        enclaveOperator,
         ir,
         compliance,
         staking,
@@ -268,7 +268,7 @@ describe('Security — audit findings regression', () => {
       const token = await deployToken();
       await mintTo(token);
 
-      await token.connect(spvOperator).initiateRedemption();
+      await token.connect(enclaveOperator).initiateRedemption();
       await token.connect(platformAgent).setAddressFrozen(alice.address, true);
 
       await expect(token.connect(alice).redeemBurn(toEth('100'))).to.be.reverted;

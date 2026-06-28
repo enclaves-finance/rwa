@@ -44,7 +44,11 @@ const PORT = Number(process.env.HARDHAT_NODE_PORT || 8545);
 // Hardhat Node defaults to chainId 31337 when started ad-hoc, regardless of
 // the `networks.hardhat.chainId` in config. Set DEV_CHAIN_ID to override.
 const CHAIN_ID = Number(process.env.DEV_CHAIN_ID || 31337);
-const AGENT_ACCOUNT_INDEX = Number(process.env.AGENT_ACCOUNT_INDEX || 2);
+// Account #0 (the deployer) is the platform agent: the RWA factory grants it
+// DEPLOYER_ROLE/ADMIN_ROLE and `deploy.ts` defaults the on-chain platformAgent
+// to it, so every token is initialized with #0 as its agent and signing-service
+// must sign as this account. It also holds the full ENCL supply for bonding.
+const AGENT_ACCOUNT_INDEX = Number(process.env.AGENT_ACCOUNT_INDEX || 0);
 const AGENT_ENCL_AMOUNT =
   process.env.AGENT_ENCL_AMOUNT || '1000000000000000000000000'; // 1M ENCL (18 decimals)
 
@@ -62,8 +66,34 @@ async function main(): Promise<void> {
     await waitForRpc();
     runDeploy();
     runExport();
-    if (!noFund) await fundPlatformAgent();
-    await patchPlatformEnv();
+    // Make the chain mint-ready: register a few Hardhat accounts as verified
+    // investors and allow their country by default. Non-fatal — a deployed
+    // chain stays up even if seeding hiccups (e.g. an ABI mismatch); the e2e
+    // can re-seed via `hardhat run scripts/seed-investors.ts`.
+    try {
+      runSeedInvestors();
+    } catch (err) {
+      const e = err as { message?: string };
+      log(`investor seed failed (non-fatal, chain stays up): ${e.message}`);
+    }
+    // Once the chain is deployed it must stay up even if these tail steps
+    // hiccup — a transient RPC blip on the (optional) pre-fund must not tear
+    // down a fully-deployed chain and, crucially, must not skip the env patch
+    // the platform services rely on.
+    if (!noFund) {
+      try {
+        await fundPlatformAgent();
+      } catch (err) {
+        const e = err as { message?: string };
+        log(`pre-fund failed (non-fatal, chain stays up): ${e.message}`);
+      }
+    }
+    try {
+      await patchPlatformEnv();
+    } catch (err) {
+      const e = err as { message?: string };
+      log(`env patch failed (chain stays up): ${e.message}`);
+    }
     log(`Dev chain ready on http://127.0.0.1:${PORT} (chainId ${CHAIN_ID}).`);
   } catch (err) {
     const e = err as { stack?: string; message?: string };
@@ -157,6 +187,16 @@ function runExport(): void {
   }
 }
 
+function runSeedInvestors(): void {
+  log('Seeding verified investors + default country\u2026');
+  const res = spawnSync(
+    'npx',
+    ['hardhat', 'run', 'scripts/seed-investors.ts', '--network', 'localhost'],
+    { cwd: RWA_ROOT, stdio: 'inherit' }
+  );
+  if (res.status !== 0) throw new Error('seed-investors failed');
+}
+
 async function fundPlatformAgent(): Promise<void> {
   log('Pre-funding platform agent with ENCL\u2026');
   const accounts = (await rpcCall('eth_accounts')) as string[];
@@ -166,6 +206,11 @@ async function fundPlatformAgent(): Promise<void> {
   }
   const deployer = accounts[0];
   const agent = accounts[AGENT_ACCOUNT_INDEX];
+
+  if (agent.toLowerCase() === deployer.toLowerCase()) {
+    log('  skipped: platform agent is the deployer, which already holds ENCL.');
+    return;
+  }
 
   const deployments = readDeployments();
   if (!deployments?.contracts?.ENCL) {
@@ -205,20 +250,31 @@ async function patchPlatformEnv(): Promise<void> {
   const accounts = (await rpcCall('eth_accounts')) as string[];
   const agent = accounts[AGENT_ACCOUNT_INDEX];
 
+  // Keys are camelCase to match the platform's single config convention
+  // (config-kit schema, GCP Secret Manager JSON, platform/.env, and every
+  // ConfigService.get(...) consumer all use camelCase). No snake-case aliases.
   const updates = {
-    RWA_NETWORK: 'development',
-    RWA_RPC_URL: `http://127.0.0.1:${PORT}`,
-    RWA_CHAIN_ID: String(CHAIN_ID),
-    PLATFORM_AGENT_ADDRESS: agent,
-    SIGNING_SERVICE_URL: 'http://127.0.0.1:4023',
-    INDEXER_ENABLED: 'true',
+    rwaNetwork: 'development',
+    rwaRpcUrl: `http://127.0.0.1:${PORT}`,
+    rwaChainId: String(CHAIN_ID),
+    // Absolute path to the deployments snapshot. assets-service runs with a
+    // cwd of platform/services/assets-service, so chain-kit's cwd-relative
+    // default misses the sibling rwa/ repo — point it at the real file.
+    rwaDeploymentsPath: path.join(RWA_ROOT, 'deployments', 'development.json'),
+    signingServiceUrl: 'http://127.0.0.1:4023',
+    // Shared S2S secret for assets-service -> signing-service. Dev-only fixed
+    // value; both services read the same `signingServiceApiKey`.
+    signingServiceApiKey: 'dev-signing-internal-key-0000000000000000',
+    indexerEnabled: 'true',
   };
   mergeEnvFile(PLATFORM_ENV, updates);
   log(`Patched ${PLATFORM_ENV}:`);
   for (const [k, v] of Object.entries(updates)) log(`  ${k}=${v}`);
   log(
-    `NOTE: PLATFORM_AGENT_PRIVATE_KEY must be copied from Hardhat Node's startup output ` +
-      `(use account index ${AGENT_ACCOUNT_INDEX}). The mnemonic is the test mnemonic.`
+    `NOTE: set platformAgentPrivateKey in ${PLATFORM_ENV} to the private key for the ` +
+      `platform agent — account index ${AGENT_ACCOUNT_INDEX} (${agent}), copied from the ` +
+      `Hardhat Node startup output (default test mnemonic). This must match the factory's ` +
+      `platformAgent / DEPLOYER_ROLE holder, which deploy.ts sets to the deployer (account #0).`
   );
 }
 
@@ -253,7 +309,7 @@ function mergeEnvFile(file: string, updates: Record<string, string>): void {
 }
 
 let rpcId = 1;
-function rpcCall(method: string, params: unknown[] = []): Promise<unknown> {
+function rpcCallOnce(method: string, params: unknown[] = []): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({ jsonrpc: '2.0', id: rpcId++, method, params });
     const req = http.request(
@@ -262,6 +318,12 @@ function rpcCall(method: string, params: unknown[] = []): Promise<unknown> {
         port: PORT,
         path: '/',
         method: 'POST',
+        // Disable HTTP keep-alive. Node >=19 enables connection reuse on the
+        // global agent by default; Hardhat Node closes idle sockets, so a
+        // reused socket yields a spurious ECONNRESET on the next request
+        // (notably the post-deploy pre-fund call). A fresh socket per call
+        // sidesteps it.
+        agent: false,
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(body),
@@ -285,6 +347,30 @@ function rpcCall(method: string, params: unknown[] = []): Promise<unknown> {
     req.write(body);
     req.end();
   });
+}
+
+// Retry transient network faults (ECONNRESET/socket hang up/etc.). JSON-RPC
+// application errors surface deterministically and are not retried.
+async function rpcCall(
+  method: string,
+  params: unknown[] = [],
+  attempts = 5
+): Promise<unknown> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await rpcCallOnce(method, params);
+    } catch (err) {
+      lastErr = err;
+      const e = err as { code?: string; message?: string };
+      const transient = /ECONNRESET|ECONNREFUSED|EPIPE|ETIMEDOUT|socket hang up/i.test(
+        String(e.code || e.message || '')
+      );
+      if (!transient || i === attempts - 1) throw err;
+      await sleep(250 * (i + 1));
+    }
+  }
+  throw lastErr;
 }
 
 function sleep(ms: number): Promise<void> {

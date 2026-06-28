@@ -216,7 +216,7 @@ export type InitParams = Record<string, unknown>;
 export function biomassBaseParams({
   issuer,
   platformAgent,
-  spvOperator,
+  enclaveOperator,
   ir,
   compliance,
   staking,
@@ -224,7 +224,7 @@ export function biomassBaseParams({
 }: {
   issuer: HardhatEthersSigner;
   platformAgent: HardhatEthersSigner;
-  spvOperator: HardhatEthersSigner;
+  enclaveOperator: HardhatEthersSigner;
   ir: MockIdentityRegistry;
   compliance: EnclavesCompliance;
   staking: StakingBond;
@@ -234,7 +234,7 @@ export function biomassBaseParams({
   return {
     issuer: issuer.address,
     platformAgent: platformAgent.address,
-    spvOperator: spvOperator.address,
+    enclaveOperator: enclaveOperator.address,
     enclaveId: C.ENCLAVE_ID,
     jurisdiction: toBytes32('SKN'),
     trustClass: o.trustClass ?? C.TRUST_CLASS.V,
@@ -355,7 +355,7 @@ export async function deployBiomassToken({
   const tx = await factory.connect(from).deploy({
     contractKind: C.CONTRACT_KIND.BIOMASS,
     issuer: base.issuer as string,
-    spvOperator: base.spvOperator as string,
+    enclaveOperator: base.enclaveOperator as string,
     spvEntityId: base.spvEntityId as string,
     trustClass: base.trustClass as number,
     denominationCurrency: base.denominationCurrency as string,
@@ -389,7 +389,7 @@ export async function deployRealEstateToken({
   const tx = await factory.connect(from).deploy({
     contractKind: C.CONTRACT_KIND.REAL_ESTATE,
     issuer: base.issuer as string,
-    spvOperator: base.spvOperator as string,
+    enclaveOperator: base.enclaveOperator as string,
     spvEntityId: base.spvEntityId as string,
     trustClass: base.trustClass as number,
     denominationCurrency: base.denominationCurrency as string,
@@ -423,7 +423,7 @@ export async function deploySecuritiesToken({
   const tx = await factory.connect(from).deploy({
     contractKind: C.CONTRACT_KIND.SECURITIES,
     issuer: base.issuer as string,
-    spvOperator: base.spvOperator as string,
+    enclaveOperator: base.enclaveOperator as string,
     spvEntityId: base.spvEntityId as string,
     trustClass: base.trustClass as number,
     denominationCurrency: base.denominationCurrency as string,

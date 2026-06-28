@@ -16,7 +16,7 @@ describe('E2E — exchange integration', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
   let alice: HardhatEthersSigner;
   let bob: HardhatEthersSigner;
@@ -38,7 +38,7 @@ describe('E2E — exchange integration', () => {
       deployer,
       platformAgent,
       issuer,
-      spvOperator,
+      enclaveOperator,
       treasury,
       alice,
       bob,
@@ -62,7 +62,7 @@ describe('E2E — exchange integration', () => {
 
     await F.registerInvestors(
       ir,
-      [issuer, spvOperator, alice, bob, carol],
+      [issuer, enclaveOperator, alice, bob, carol],
       C.COUNTRY.NA,
       deployer
     );
@@ -75,7 +75,7 @@ describe('E2E — exchange integration', () => {
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
@@ -102,7 +102,7 @@ describe('E2E — exchange integration', () => {
       );
 
     await F.setAllMintConditions(token as any, platformAgent);
-    await token.connect(spvOperator).approveMint();
+    await token.connect(enclaveOperator).approveMint();
     await F.fundAndBond({
       encl,
       staking,
@@ -193,7 +193,7 @@ describe('E2E — exchange integration', () => {
     });
 
     it('SPV can suspend after listing', async () => {
-      await token.connect(spvOperator).suspend();
+      await token.connect(enclaveOperator).suspend();
       await expect(token.connect(exchangeWallet).transfer(carol.address, toEth('1'))).to
         .be.reverted;
     });

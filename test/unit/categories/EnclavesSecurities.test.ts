@@ -10,7 +10,7 @@ describe('EnclavesSecurities (category)', () => {
   let deployer: HardhatEthersSigner;
   let platformAgent: HardhatEthersSigner;
   let issuer: HardhatEthersSigner;
-  let spvOperator: HardhatEthersSigner;
+  let enclaveOperator: HardhatEthersSigner;
   let treasury: HardhatEthersSigner;
 
   let encl: F.ENCL;
@@ -22,7 +22,7 @@ describe('EnclavesSecurities (category)', () => {
   let token: F.EnclavesSecurities;
 
   before(async () => {
-    [deployer, platformAgent, issuer, spvOperator, treasury] = await ethers.getSigners();
+    [deployer, platformAgent, issuer, enclaveOperator, treasury] = await ethers.getSigners();
 
     ({ encl, staking, ir } = await F.deployGlobals({
       deployer,
@@ -35,12 +35,12 @@ describe('EnclavesSecurities (category)', () => {
       ir,
       staking,
     }));
-    await F.registerInvestors(ir, [issuer, spvOperator], C.COUNTRY.US, deployer);
+    await F.registerInvestors(ir, [issuer, enclaveOperator], C.COUNTRY.US, deployer);
 
     const base = F.biomassBaseParams({
       issuer,
       platformAgent,
-      spvOperator,
+      enclaveOperator,
       ir,
       compliance,
       staking,
